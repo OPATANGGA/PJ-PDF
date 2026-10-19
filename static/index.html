@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PDF Studio" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/static/icon.svg" />
+    <link rel="apple-touch-icon" href="/static/icon.svg" />
+
+    <title>PDF Studio Pro — All-in-One Cross-Platform PDF Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QR Code Generator for Cross-Device Mobile Access -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <!-- Tesseract.js for Thai + English OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    <!-- Ambient Background Glows -->
+    <div class="ambient-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop hidden"></div>
+
+    <!-- Global Processing Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loader-card">
+            <div class="spinner-ring"></div>
+            <h4 id="loading-title">กำลังประมวลผลไฟล์...</h4>
+            <p id="loading-subtitle">ประมวลผลในเครื่องอย่างปลอดภัย 100%</p>
+        </div>
+    </div>
+
+    <!-- Cross-Platform / Mobile QR Modal -->
+    <div id="qr-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="modal-badge"><i data-lucide="smartphone"></i> Cross-Platform</span>
+                    <h3>ใช้งานข้ามอุปกรณ์ & ติดตั้งแอป</h3>
+                </div>
+                <button class="icon-close-btn" id="close-qr-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-grid">
+                    <div class="qr-box-wrap">
+                        <div id="qr-code-container" class="qr-code-box"></div>
+                        <span class="qr-caption">สแกนด้วยกล้องมือถือ (Wi-Fi เดียวกัน)</span>
+                    </div>
+                    <div class="platform-info-col">
+                        <div class="info-pill">
+                            <span class="pill-label">ลิงก์สำหรับมือถือ / แท็บเล็ต / เครื่องอื่นใน Wi-Fi:</span>
+                            <div class="url-copy-row">
+                                <code id="lan-url-display">กำลังตรวจหา IP...</code>
+                                <button class="btn btn-sm btn-primary" id="copy-lan-url-btn">คัดลอก</button>
+                            </div>
+                        </div>
+
+                        <div class="platform-badges-list">
+                            <div class="plat-item">
+                                <strong>💻 Windows / macOS / Linux</strong>
+                                <p>กดปุ่ม <b>"ติดตั้งแอป"</b> บนแถบด้านบน หรือไอคอนติดตั้งบนแถบ URL ของ Chrome/Edge เพื่อรันเป็นโปรแกรมเดสก์ท็อป</p>
+                            </div>
+                            <div class="plat-item">
+                                <strong>📱 iOS (iPhone / iPad) & Android</strong>
+                                <p>สแกน QR Code ด้านซ้าย แล้วกดเมนูแชร์ ➔ <b>"เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)"</b> เพื่อใช้งานเต็มจอเหมือนแอปเนทีฟ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="app-sidebar">
+            <div class="brand">
+                <div class="brand-logo">
+                    <img src="/static/icon.svg" alt="PDF Studio Pro" />
+                </div>
+                <div class="brand-text">
+                    <h1>PDF Studio <span>Pro</span></h1>
+                    <span class="badge-pill">Multi-Platform Suite</span>
+                </div>
+                <button class="mobile-only icon-close-btn" id="close-sidebar-btn">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-tab="dashboard">
+                    <i data-lucide="layout-grid"></i>
+                    <span>หน้าหลักรวมเครื่องมือ</span>
+                </button>
+
+                <div class="nav-group-label">จัดการหน้าและไฟล์</div>
+                <button class="nav-btn" data-tab="organize">
+                    <i data-lucide="SlidersHorizontal"></i>
+                    <span>แยก / ลบ / หมุน / เรียงหน้า</span>
+                </button>
+                <button class="nav-btn" data-tab="merge">
+                    <i data-lucide="files"></i>
+                    <span>รวมไฟล์ PDF (Merge)</span>
+                </button>
+
+                <div class="nav-group-label">ลายน้ำและปรับแต่ง</div>
+                <button class="nav-btn highlight-btn" data-tab="remove-wm">
+                    <i data-lucide="wand-sparkles"></i>
+                    <span>ลบลายน้ำอัจฉริยะ</span>
+                    <span class="hot-tag">HOT</span>
+                </button>
+                <button class="nav-btn" data-tab="add-wm">
+                    <i data-lucide="stamp"></i>
+                    <span>ใส่ลายน้ำ (Text / Logo)</span>
+                </button>
+                <button class="nav-btn" data-tab="compress">
+                    <i data-lucide="zap"></i>
+                    <span>บีบอัดขนาดไฟล์</span>
+                </button>
+
+                <div class="nav-group-label">แปลงไฟล์เอกสาร & รูปภาพ</div>
+                <button class="nav-btn" data-tab="pdf-office">
+                    <i data-lucide="file-Spreadsheet"></i>
+                    <span>PDF ⇄ Word / Excel / Text</span>
+                </button>
+                <button class="nav-btn" data-tab="pdf-images">
+                    <i data-lucide="images"></i>
+                    <span>PDF ⇄ รูปภาพ (PNG / JPG)</span>
+                </button>
+                <button class="nav-btn" data-tab="ocr">
+                    <i data-lucide="scan-text"></i>
+                    <span>ดึงข้อความ OCR (ไทย/อังกฤษ)</span>
+                </button>
+
+                <div class="nav-group-label">ความปลอดภัย</div>
+                <button class="nav-btn" data-tab="security">
+                    <i data-lucide="shield-check"></i>
+                    <span>ล็อก / ปลดล็อกรหัสผ่าน</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="security-chip">
+                    <i data-lucide="lock"></i>
+                    <span>Local Processing 100%</span>
+                </div>
+                <p>รองรับ Windows • macOS • Linux • iOS • Android</p>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Wrapper -->
+        <div class="main-wrapper">
+            <!-- Top Glass Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="icon-action-btn mobile-only" id="open-sidebar-btn" aria-label="Menu">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="header-breadcrumb">
+                        <span class="crumb-root" id="back-to-home-btn">PDF Studio Pro</span>
+                        <span class="crumb-sep">/</span>
+                        <span class="crumb-current" id="current-tool-title">หน้าหลักรวมเครื่องมือ</span>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <button class="header-pill-btn" id="open-qr-btn" title="เปิดบนมือถือหรือแท็บเล็ตผ่าน QR Code">
+                        <i data-lucide="qr-code"></i>
+                        <span>เชื่อมต่อมือถือ / QR</span>
+                    </button>
+                    <button class="header-pill-btn install-btn hidden" id="pwa-install-btn" title="ติดตั้งเป็นแอปลงเครื่อง">
+                        <i data-lucide="download"></i>
+                        <span>ติดตั้งแอป</span>
+                    </button>
+                    <button class="icon-action-btn" id="theme-toggle-btn" title="สลับโหมดมืด/สว่าง">
+                        <i data-lucide="sun" id="theme-icon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <!-- Status Toast -->
+                <div id="status-toast" class="toast hidden"></div>
+
+                <!-- 0. DASHBOARD HOME (BENTO GRID) -->
+                <section id="tab-dashboard" class="tool-section active">
+                    <div class="hero-banner">
+                        <div class="hero-content">
+                            <div class="hero-pill">✨ All-in-One Cross-Platform PDF Suite</div>
+                            <h2>จัดการและแปลงไฟล์ PDF ครบจบในที่เดียว</h2>
+                            <p>ใช้งานได้ทั้งบนคอมพิวเตอร์ มือถือ และแท็บเล็ต ประมวลผลรวดเร็วในเครื่อง ปลอดภัย 100% รองรับภาษาไทยเต็มรูปแบบ</p>
+                        </div>
+                        <div class="hero-stats">
+                            <div class="stat-box">
+                                <span class="stat-num">9+</span>
+                                <span class="stat-label">เครื่องมือครบวงจร</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-num">100%</span>
+                                <span class="stat-label">ปลอดภัยในเครื่อง</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-num">ทุกอุปกรณ์</span>
+                                <span class="stat-label">PC • Mac • มือถือ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bento-grid">
+                        <div class="bento-card featured" data-goto="remove-wm">
+                            <div class="bento-icon pink"><i data-lucide="wand-sparkles"></i></div>
+                            <div class="bento-badge">ยอดนิยม</div>
+                            <h3>ลบลายน้ำอัจฉริยะ (Remove Watermark)</h3>
+                            <p>ลบเลเยอร์สแตมป์ ลบข้อความซ้ำ ลากกรอบลบด้วยเมาส์/นิ้วมือ หรือกรองลายน้ำสีจางสำหรับไฟล์สแกน พร้อมดูตัวอย่างทันที</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+
+                        <div class="bento-card" data-goto="organize">
+                            <div class="bento-icon indigo"><i data-lucide="sliders-horizontal"></i></div>
+                            <h3>แยก / ลบ / หมุน / เรียงหน้า</h3>
+                            <p>ดูภาพตัวอย่างทุกหน้า หมุนหน้า ลบหน้า สลับลำดับ หรือแยกเป็นหลายไฟล์</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+
+                        <div class="bento-card" data-goto="merge">
+                            <div class="bento-icon blue"><i data-lucide="files"></i></div>
+                            <h3>รวมไฟล์ PDF (Merge)</h3>
+                            <p>นำไฟล์ PDF หลายไฟล์มารวมเป็นเอกสารเดียว จัดลำดับก่อน-หลังได้อย่างอิสระ</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+
+                        <div class="bento-card" data-goto="pdf-office">
+                            <div class="bento-icon emerald"><i data-lucide="file-spreadsheet"></i></div>
+                            <h3>PDF ⇄ Word / Excel / Text</h3>
+                            <p>แปลง PDF เป็นไฟล์ .docx, .xlsx, .txt หรือแปลงเอกสารกลับเป็น PDF รองรับภาษาไทย</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+
+                        <div class="bento-card" data-goto="pdf-images">
+                            <div class="bento-icon amber"><i data-lucide="images"></i></div>
+                            <h3>PDF ⇄ รูปภาพ (PNG / JPG)</h3>
+                            <p>แปลงหน้า PDF เป็นภาพความละเอียดสูงถึง 300 DPI หรือรวมรูปภาพเป็น PDF</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+
+                        <div class="bento-card" data-goto="compress">
+                            <div class="bento-icon purple"><i data-lucide="zap"></i></div>
+                            <h3>บีบอัดขนาด PDF (Compress)</h3>
+                            <p>ลดขนาดไฟล์ PDF ให้เล็กลงเพื่อส่งงานหรืออัปโหลด พร้อมเทียบขนาดก่อน-หลัง</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+
+                        <div class="bento-card" data-goto="add-wm">
+                            <div class="bento-icon cyan"><i data-lucide="stamp"></i></div>
+                            <h3>ใส่ลายน้ำ (Add Watermark)</h3>
+                            <p>ประทับตราข้อความภาษาไทย/อังกฤษ หรือโลโก้รูปภาพ ปรับความโปร่งใสและมุมเอียงได้</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+
+                        <div class="bento-card" data-goto="ocr">
+                            <div class="bento-icon rose"><i data-lucide="scan-text"></i></div>
+                            <h3>สแกนข้อความ OCR (ไทย/อังกฤษ)</h3>
+                            <p>ดึงข้อความจากไฟล์สแกนหรือรูปภาพ รองรับภาษาไทยและอังกฤษพร้อมกัน</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+
+                        <div class="bento-card" data-goto="security">
+                            <div class="bento-icon teal"><i data-lucide="shield-check"></i></div>
+                            <h3>ล็อก / ปลดล็อกรหัสผ่าน</h3>
+                            <p>เข้ารหัสไฟล์ PDF ด้วยมาตรฐาน AES-256 หรือปลดล็อกรหัสผ่านออกจากไฟล์</p>
+                            <span class="bento-link">เปิดเครื่องมือ ➔</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 1. ORGANIZE / SPLIT / ROTATE -->
+                <section id="tab-organize" class="tool-section">
+                    <div class="section-header">
+                        <h2>🗂️ แยกหน้า / ลบหน้า / หมุนหน้า / จัดเรียงหน้า PDF</h2>
+                        <p>ดูตัวอย่างทุกหน้า หมุนหน้า ลบหน้าที่ไม่ต้องการ สลับลำดับ หรือแยกไฟล์ออกเป็นช่วงหน้า</p>
+                    </div>
+
+                    <div class="upload-zone" id="org-dropzone">
+                        <input type="file" id="org-file" accept=".pdf" hidden />
+                        <div class="upload-prompt">
+                            <div class="upload-icon-circle"><i data-lucide="folder-up"></i></div>
+                            <h3>คลิกเลือกไฟล์ PDF หรือลากไฟล์มาวางที่นี่</h3>
+                            <p>ระบบจะแสดงตัวอย่างทุกหน้าเพื่อให้คุณจัดการได้ทันที (รองรับทั้งเมาส์และหน้าจอสัมผัส)</p>
+                        </div>
+                    </div>
+
+                    <div id="org-workspace" class="workspace-panel hidden">
+                        <div class="toolbar-row">
+                            <div class="file-badge" id="org-file-info">ไฟล์: -</div>
+                            <div class="btn-group">
+                                <button class="btn btn-secondary" id="org-rotate-all-left">↺ หมุนซ้ายทุกหน้า</button>
+                                <button class="btn btn-secondary" id="org-rotate-all-right">↻ หมุนขวาทุกหน้า</button>
+                                <button class="btn btn-secondary" id="org-reset-pages">รีเซ็ตลำดับเดิม</button>
+                                <button class="btn btn-outline" id="org-change-file">เปลี่ยนไฟล์</button>
+                            </div>
+                        </div>
+
+                        <div class="mode-tabs">
+                            <label class="radio-card active">
+                                <input type="radio" name="org-mode" value="custom_order" checked />
+                                <span>✨ จัดเรียง / หมุน / ลบหน้า (คลิกบนการ์ดแต่ละหน้า)</span>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="org-mode" value="split_range" />
+                                <span>✂️ แยกเฉพาะช่วงหน้า (เช่น 1-3, 5, 7-10)</span>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="org-mode" value="split_every_page" />
+                                <span>📦 แยกทุกหน้าเป็นไฟล์เดี่ยว (.zip)</span>
+                            </label>
+                        </div>
+
+                        <div id="org-range-box" class="sub-panel hidden">
+                            <label>ระบุช่วงหน้าที่ต้องการแยก (คั่นด้วยลูกน้ำ `,` หากมีหลายช่วงจะได้ไฟล์ ZIP):</label>
+                            <input type="text" id="org-split-input" class="input-field" placeholder="ตัวอย่าง: 1-3, 4-6, 8" />
+                        </div>
+
+                        <div id="org-pages-grid" class="pages-grid"></div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-primary btn-lg" id="org-submit-btn">💾 บันทึกและดาวน์โหลดไฟล์</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. MERGE PDF -->
+                <section id="tab-merge" class="tool-section">
+                    <div class="section-header">
+                        <h2>🔗 รวมไฟล์ PDF (Merge PDFs)</h2>
+                        <p>นำไฟล์ PDF หลายไฟล์มารวมเป็นไฟล์เดียว จัดเรียงลำดับก่อน-หลังได้ตามต้องการ</p>
+                    </div>
+
+                    <div class="upload-zone" id="merge-dropzone">
+                        <input type="file" id="merge-files" accept=".pdf" multiple hidden />
+                        <div class="upload-prompt">
+                            <div class="upload-icon-circle"><i data-lucide="file-plus-2"></i></div>
+                            <h3>คลิกเพิ่มไฟล์ PDF (เลือกได้หลายไฟล์พร้อมกัน)</h3>
+                            <p>สามารถเพิ่มไฟล์ต่อเนื่องและจัดลำดับก่อนรวมไฟล์ได้</p>
+                        </div>
+                    </div>
+
+                    <div id="merge-workspace" class="workspace-panel hidden">
+                        <div class="toolbar-row">
+                            <span class="file-badge" id="merge-count-label">เลือกแล้ว 0 ไฟล์</span>
+                            <button class="btn btn-secondary" id="merge-clear-btn">ล้างรายการทั้งหมด</button>
+                        </div>
+                        <ul id="merge-file-list" class="file-sortable-list"></ul>
+                        <div class="action-bar">
+                            <button class="btn btn-primary btn-lg" id="merge-submit-btn">🔗 รวมไฟล์ PDF และดาวน์โหลด</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. REMOVE WATERMARK -->
+                <section id="tab-remove-wm" class="tool-section">
+                    <div class="section-header">
+                        <h2>🪄 ลบลายน้ำอัจฉริยะ (Smart Watermark Remover)</h2>
+                        <p>รองรับการลบลายน้ำได้ถึง 4 รูปแบบ: ลบเลเยอร์/สแตมป์อัตโนมัติ, ลบคำลายน้ำซ้ำ, ลากกรอบพื้นที่ด้วยเมาส์หรือนิ้วมือ, และกรองความเข้มสีสำหรับไฟล์สแกน</p>
+                    </div>
+
+                    <div class="upload-zone" id="rmwm-dropzone">
+                        <input type="file" id="rmwm-file" accept=".pdf" hidden />
+                        <div class="upload-prompt">
+                            <div class="upload-icon-circle"><i data-lucide="wand-sparkles"></i></div>
+                            <h3>เลือกไฟล์ PDF ที่ต้องการลบลายน้ำ</h3>
+                            <p>ระบบจะวิเคราะห์ข้อความซ้ำและแสดงตัวอย่างหน้ากระดาษให้ลากคลุมจุดที่ต้องการลบได้</p>
+                        </div>
+                    </div>
+
+                    <div id="rmwm-workspace" class="workspace-panel hidden">
+                        <div class="toolbar-row">
+                            <div class="file-badge" id="rmwm-file-info">ไฟล์: -</div>
+                            <button class="btn btn-outline" id="rmwm-change-file">เปลี่ยนไฟล์</button>
+                        </div>
+
+                        <div class="split-two-col">
+                            <!-- Left controls -->
+                            <div class="control-card no-margin">
+                                <h3>ตั้งค่าวิธีลบลายน้ำ (เลือกใช้ร่วมกันได้)</h3>
+
+                                <label class="checkbox-row">
+                                    <input type="checkbox" id="rmwm-auto-layer" checked />
+                                    <div>
+                                        <strong>1. ลบเลเยอร์ลายน้ำ / Annotation / รูปภาพโปร่งใสอัตโนมัติ</strong>
+                                        <p class="hint">ลบวัตถุสแตมป์และภาพพื้นหลังโปร่งแสงที่ซ้อนทับอยู่บนหน้ากระดาษ</p>
+                                    </div>
+                                </label>
+
+                                <div class="form-group">
+                                    <label><strong>2. ลบข้อความลายน้ำที่ระบุ (คั่นด้วย `,` หากมีหลายคำ)</strong></label>
+                                    <input type="text" id="rmwm-target-text" class="input-field" placeholder="เช่น สำเนาถูกต้อง, CONFIDENTIAL, DRAFT" />
+                                    <div id="rmwm-detected-chips" class="chips-container"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><strong>3. ลากกรอบสี่เหลี่ยมบนภาพตัวอย่างเพื่อลบลายน้ำเฉพาะจุด</strong></label>
+                                    <p class="hint">ใช้เมาส์หรือนิ้วลากคลุมบริเวณลายน้ำบนภาพตัวอย่าง (เช่น หัวกระดาษ ท้ายกระดาษ หรือตราปั๊ม) เพื่อลบตำแหน่งเดียวกันทุกหน้า</p>
+                                    <div class="btn-group" style="margin-top: 0.5rem;">
+                                        <button class="btn btn-secondary btn-sm" id="rmwm-clear-regions">🗑️ ล้างกรอบที่วาด (<span id="rmwm-region-count">0</span>)</button>
+                                    </div>
+                                </div>
+
+                                <hr class="divider" />
+
+                                <label class="checkbox-row">
+                                    <input type="checkbox" id="rmwm-color-filter" />
+                                    <div>
+                                        <strong>4. โหมดกรองสี/ความจาง (เหมาะสำหรับไฟล์สแกนหรือลายน้ำสีเทาอ่อน)</strong>
+                                        <p class="hint">ตัดพิกเซลลายน้ำที่จางกว่าค่าที่กำหนดให้เป็นพื้นขาว โดยคงตัวหนังสือสีเข้มไว้</p>
+                                    </div>
+                                </label>
+
+                                <div id="rmwm-threshold-box" class="form-group hidden">
+                                    <label>ระดับความสว่างของลายน้ำที่จะตัดออก: <strong id="rmwm-thresh-val">195</strong> (130 = เข้มมาก, 240 = จางมาก)</label>
+                                    <input type="range" id="rmwm-threshold" min="130" max="245" value="195" class="range-slider" />
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>สีพื้นหลังแทนที่จุดที่ลบ</label>
+                                        <input type="color" id="rmwm-fill-color" value="#ffffff" class="color-picker" />
+                                    </div>
+                                    <div class="form-group" style="flex:1">
+                                        <label>หน้าที่ต้องการลบ (เว้นว่าง = ทุกหน้า)</label>
+                                        <input type="text" id="rmwm-page-range" class="input-field" placeholder="all หรือ 1-5" value="all" />
+                                    </div>
+                                </div>
+
+                                <div class="action-bar-inline">
+                                    <button class="btn btn-secondary" id="rmwm-preview-btn">👁️ ดูตัวอย่างผลลัพธ์หน้านี้</button>
+                                    <button class="btn btn-primary" id="rmwm-submit-btn">🪄 ลบลายน้ำและดาวน์โหลด PDF</button>
+                                </div>
+                            </div>
+
+                            <!-- Right interactive preview -->
+                            <div class="preview-card">
+                                <div class="preview-header">
+                                    <span>หน้าตัวอย่าง (ลากเมาส์หรือนิ้วบนภาพเพื่อตีกรอบลบได้)</span>
+                                    <div class="page-nav">
+                                        <button class="btn btn-sm btn-secondary" id="rmwm-prev-page">◀</button>
+                                        <span id="rmwm-page-indicator">1 / 1</span>
+                                        <button class="btn btn-sm btn-secondary" id="rmwm-next-page">▶</button>
+                                    </div>
+                                </div>
+                                <div class="canvas-wrapper">
+                                    <canvas id="rmwm-canvas"></canvas>
+                                </div>
+                                <div id="rmwm-after-box" class="after-preview-box hidden">
+                                    <h4>✨ ตัวอย่างหลังลบลายน้ำ (หน้าปัจจุบัน)</h4>
+                                    <img id="rmwm-after-img" alt="Preview after watermark removal" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. ADD WATERMARK -->
+                <section id="tab-add-wm" class="tool-section">
+                    <div class="section-header">
+                        <h2>🏷️ ใส่ลายน้ำ (Add Watermark)</h2>
+                        <p>ใส่ลายน้ำข้อความ (รองรับภาษาไทยและอังกฤษ) หรือโลโก้รูปภาพ ปรับความโปร่งใส มุมเอียง และตำแหน่งได้อิสระ</p>
+                    </div>
+
+                    <div class="upload-zone" id="addwm-dropzone">
+                        <input type="file" id="addwm-file" accept=".pdf" hidden />
+                        <div class="upload-prompt">
+                            <div class="upload-icon-circle"><i data-lucide="stamp"></i></div>
+                            <h3>เลือกไฟล์ PDF ที่ต้องการใส่ลายน้ำ</h3>
+                        </div>
+                    </div>
+
+                    <div id="addwm-workspace" class="workspace-panel hidden">
+                        <div class="toolbar-row">
+                            <div class="file-badge" id="addwm-file-info">ไฟล์: -</div>
+                            <button class="btn btn-outline" id="addwm-change-file">เปลี่ยนไฟล์</button>
+                        </div>
+
+                        <div class="control-card no-margin">
+                            <div class="mode-tabs">
+                                <label class="radio-card active">
+                                    <input type="radio" name="addwm-type" value="text" checked />
+                                    <span>🔤 ลายน้ำข้อความ (Text)</span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="addwm-type" value="image" />
+                                    <span>🖼️ ลายน้ำรูปภาพ / โลโก้ (Image)</span>
+                                </label>
+                            </div>
+
+                            <div id="addwm-text-controls">
+                                <div class="form-group">
+                                    <label>ข้อความลายน้ำ (รองรับภาษาไทย/อังกฤษ)</label>
+                                    <input type="text" id="addwm-text" class="input-field" value="สำเนาถูกต้อง / CONFIDENTIAL" />
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>ขนาดตัวอักษร: <span id="addwm-size-val">42</span> px</label>
+                                        <input type="range" id="addwm-size" min="16" max="120" value="42" class="range-slider" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>มุมเอียง: <span id="addwm-angle-val">45</span>°</label>
+                                        <input type="range" id="addwm-angle" min="-90" max="90" value="45" class="range-slider" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>สีข้อความ</label>
+                                        <input type="color" id="addwm-color" value="#64748b" class="color-picker" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="addwm-image-controls" class="hidden">
+                                <div class="form-group">
+                                    <label>เลือกรูปภาพโลโก้ (แนะนำ PNG พื้นหลังโปร่งใส)</label>
+                                    <input type="file" id="addwm-img-file" accept="image/*" class="input-field" />
+                                </div>
+                                <div class="form-group">
+                                    <label>ขนาดรูปภาพเทียบกับหน้ากระดาษ: <span id="addwm-scale-val">35</span>%</label>
+                                    <input type="range" id="addwm-scale" min="10" max="90" value="35" class="range-slider" />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>ความโปร่งใส (Opacity): <span id="addwm-opacity-val">25</span>%</label>
+                                    <input type="range" id="addwm-opacity" min="5" max="100" value="25" class="range-slider" />
+                                </div>
+                                <div class="form-group">
+                                    <label>ตำแหน่งลายน้ำ</label>
+                                    <select id="addwm-position" class="input-field">
+                                        <option value="center">กึ่งกลางหน้า (Center)</option>
+                                        <option value="tiled">ปูเต็มหน้ากระดาษ (Tiled / ตาราง)</option>
+                                        <option value="header">ส่วนหัวกระดาษ (Header)</option>
+                                        <option value="footer">ส่วนท้ายกระดาษ (Footer)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>ช่วงหน้าที่ใส่ลายน้ำ</label>
+                                    <input type="text" id="addwm-pages" class="input-field" value="all" placeholder="all หรือ 1-3, 5" />
+                                </div>
+                            </div>
+
+                            <div class="action-bar">
+                                <button class="btn btn-primary btn-lg" id="addwm-submit-btn">🏷️ ใส่ลายน้ำและดาวน์โหลด PDF</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. COMPRESS PDF -->
+                <section id="tab-compress" class="tool-section">
+                    <div class="section-header">
+                        <h2>⚡ บีบอัดขนาดไฟล์ PDF (Compress PDF)</h2>
+                        <p>ลดขนาดไฟล์ PDF ให้เล็กลงเพื่อส่งอีเมลหรืออัปโหลดขึ้นระบบ โดยยังรักษาความคมชัดของตัวอักษร</p>
+                    </div>
+
+                    <div class="upload-zone" id="comp-dropzone">
+                        <input type="file" id="comp-file" accept=".pdf" hidden />
+                        <div class="upload-prompt">
+                            <div class="upload-icon-circle"><i data-lucide="zap"></i></div>
+                            <h3>เลือกไฟล์ PDF ที่ต้องการลดขนาด</h3>
+                        </div>
+                    </div>
+
+                    <div id="comp-workspace" class="workspace-panel hidden">
+                        <div class="toolbar-row">
+                            <div class="file-badge" id="comp-file-info">ไฟล์: -</div>
+                            <button class="btn btn-outline" id="comp-change-file">เปลี่ยนไฟล์</button>
+                        </div>
+
+                        <div class="mode-tabs">
+                            <label class="radio-card">
+                                <input type="radio" name="comp-level" value="low" />
+                                <span>🌟 คงความคมชัดสูงสุด (ลดขนาดเล็กน้อย)</span>
+                            </label>
+                            <label class="radio-card active">
+                                <input type="radio" name="comp-level" value="medium" checked />
+                                <span>⚖️ สมดุล (แนะนำ - คมชัดและขนาดเล็กลงมาก)</span>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="comp-level" value="high" />
+                                <span>🚀 บีบอัดสูงสุด (ขนาดไฟล์เล็กที่สุด)</span>
+                            </label>
+                        </div>
+
+                        <div id="comp-result-banner" class="stats-banner hidden"></div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-primary btn-lg" id="comp-submit-btn">⚡ บีบอัดไฟล์และดาวน์โหลด</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. PDF <-> OFFICE -->
+                <section id="tab-pdf-office" class="tool-section">
+                    <div class="section-header">
+                        <h2>📝 แปลงไฟล์ PDF ⇄ เอกสาร (Word / Excel / Text)</h2>
+                        <p>แปลงไฟล์ PDF เป็นเอกสารที่แก้ไขได้ หรือแปลงไฟล์ Word (.docx), Excel (.xlsx), Text (.txt) กลับเป็น PDF</p>
+                    </div>
+
+                    <div class="mode-tabs" style="margin-bottom: 1.5rem;">
+                        <label class="radio-card active">
+                            <input type="radio" name="office-dir" value="pdf2office" checked />
+                            <span>📄➡️📝 แปลง PDF เป็น Word / Excel / Text</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="office-dir" value="office2pdf" />
+                            <span>📝➡️📄 แปลง Word / Excel / Text เป็น PDF</span>
+                        </label>
+                    </div>
+
+                    <!-- Subpanel A: PDF to Office -->
+                    <div id="panel-pdf2office" class="control-card no-margin">
+                        <div class="upload-zone" id="p2o-dropzone">
+                            <input type="file" id="p2o-file" accept=".pdf" hidden />
+                            <div class="upload-prompt">
+                                <div class="upload-icon-circle"><i data-lucide="file-text"></i></div>
+                                <h3 id="p2o-filename">คลิกเลือกไฟล์ PDF ที่ต้องการแปลง</h3>
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-top: 1.2rem;">
+                            <div class="form-group" style="flex:2">
+                                <label>เลือกรูปแบบไฟล์ปลายทาง</label>
+                                <select id="p2o-format" class="input-field">
+                                    <option value="docx">📘 Microsoft Word (.docx) — รักษาโครงสร้างและตาราง</option>
+                                    <option value="xlsx">📗 Microsoft Excel (.xlsx) — ดึงตารางข้อมูลแยกตามหน้า</option>
+                                    <option value="txt">📃 ข้อความล้วน (.txt) — ดึงเฉพาะข้อความ</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1">
+                                <label>ช่วงหน้า (เว้นว่าง = ทุกหน้า)</label>
+                                <input type="text" id="p2o-pages" class="input-field" value="all" placeholder="all หรือ 1-5" />
+                            </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-primary btn-lg" id="p2o-submit-btn">🔄 แปลงไฟล์และดาวน์โหลด</button>
+                        </div>
+                    </div>
+
+                    <!-- Subpanel B: Office to PDF -->
+                    <div id="panel-office2pdf" class="control-card no-margin hidden">
+                        <div class="upload-zone" id="o2p-dropzone">
+                            <input type="file" id="o2p-file" accept=".docx,.xlsx,.txt" hidden />
+                            <div class="upload-prompt">
+                                <div class="upload-icon-circle"><i data-lucide="file-Spreadsheet"></i></div>
+                                <h3 id="o2p-filename">คลิกเลือกไฟล์ .docx, .xlsx หรือ .txt</h3>
+                                <p>รองรับสระและวรรณยุกต์ภาษาไทยครบถ้วนทุกแพลตฟอร์ม</p>
+                            </div>
+                        </div>
+                        <div class="action-bar" style="margin-top: 1.2rem;">
+                            <button class="btn btn-primary btn-lg" id="o2p-submit-btn">📄 แปลงเป็น PDF และดาวน์โหลด</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. PDF <-> IMAGES -->
+                <section id="tab-pdf-images" class="tool-section">
+                    <div class="section-header">
+                        <h2>🖼️ แปลงไฟล์ PDF ⇄ รูปภาพ (JPG / PNG)</h2>
+                        <p>แปลงหน้ากระดาษ PDF เป็นไฟล์รูปภาพความละเอียดสูง หรือรวมรูปภาพหลายรูปเป็นไฟล์ PDF</p>
+                    </div>
+
+                    <div class="mode-tabs" style="margin-bottom: 1.5rem;">
+                        <label class="radio-card active">
+                            <input type="radio" name="img-dir" value="pdf2img" checked />
+                            <span>📄➡️🖼️ แปลง PDF เป็นรูปภาพ (PNG / JPG)</span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="img-dir" value="img2pdf" />
+                            <span>🖼️➡️📄 รวมรูปภาพเป็น PDF</span>
+                        </label>
+                    </div>
+
+                    <!-- PDF to Image -->
+                    <div id="panel-pdf2img" class="control-card no-margin">
+                        <div class="upload-zone" id="p2i-dropzone">
+                            <input type="file" id="p2i-file" accept=".pdf" hidden />
+                            <div class="upload-prompt">
+                                <div class="upload-icon-circle"><i data-lucide="image-down"></i></div>
+                                <h3 id="p2i-filename">คลิกเลือกไฟล์ PDF ที่ต้องการแปลงเป็นรูปภาพ</h3>
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-top: 1.2rem;">
+                            <div class="form-group">
+                                <label>นามสกุลรูปภาพ</label>
+                                <select id="p2i-format" class="input-field">
+                                    <option value="png">PNG (คมชัดสูงสุด)</option>
+                                    <option value="jpg">JPG (ขนาดไฟล์เล็ก)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>ความละเอียด (DPI)</label>
+                                <select id="p2i-dpi" class="input-field">
+                                    <option value="150">150 DPI (มาตรฐาน)</option>
+                                    <option value="200" selected>200 DPI (คมชัด)</option>
+                                    <option value="300">300 DPI (สำหรับพิมพ์)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>ช่วงหน้า</label>
+                                <input type="text" id="p2i-pages" class="input-field" value="all" placeholder="all หรือ 1-3" />
+                            </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-primary btn-lg" id="p2i-submit-btn">🖼️ แปลงเป็นรูปภาพและดาวน์โหลด</button>
+                        </div>
+                    </div>
+
+                    <!-- Image to PDF -->
+                    <div id="panel-img2pdf" class="control-card no-margin hidden">
+                        <div class="upload-zone" id="i2p-dropzone">
+                            <input type="file" id="i2p-files" accept="image/*" multiple hidden />
+                            <div class="upload-prompt">
+                                <div class="upload-icon-circle"><i data-lucide="images"></i></div>
+                                <h3 id="i2p-filename">คลิกเลือกรูปภาพ (เลือกได้หลายรูป PNG, JPG, WEBP)</h3>
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-top: 1.2rem;">
+                            <div class="form-group">
+                                <label>ขนาดหน้ากระดาษ</label>
+                                <select id="i2p-size" class="input-field">
+                                    <option value="a4_portrait">A4 แนวตั้ง (Portrait)</option>
+                                    <option value="a4_landscape">A4 แนวนอน (Landscape)</option>
+                                    <option value="original">ขนาดเท่าภาพต้นฉบับพอดี</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>ระยะขอบกระดาษ (Margin px)</label>
+                                <input type="number" id="i2p-margin" class="input-field" value="20" min="0" max="100" />
+                            </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-primary btn-lg" id="i2p-submit-btn">📄 รวมรูปภาพเป็น PDF</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. OCR THAI / ENGLISH -->
+                <section id="tab-ocr" class="tool-section">
+                    <div class="section-header">
+                        <h2>🔍 ดึงข้อความจากไฟล์สแกนและรูปภาพ (OCR ภาษาไทย + อังกฤษ)</h2>
+                        <p>สกัดข้อความจาก PDF ที่เป็นภาพสแกนหรือไฟล์รูปภาพ รองรับทั้งภาษาไทยและภาษาอังกฤษพร้อมกัน</p>
+                    </div>
+
+                    <div class="control-card no-margin">
+                        <div class="upload-zone" id="ocr-dropzone">
+                            <input type="file" id="ocr-file" accept=".pdf,image/*" hidden />
+                            <div class="upload-prompt">
+                                <div class="upload-icon-circle"><i data-lucide="scan-text"></i></div>
+                                <h3 id="ocr-filename">คลิกเลือกไฟล์ PDF หรือรูปภาพที่ต้องการสแกนตัวอักษร</h3>
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-top: 1.2rem;">
+                            <div class="form-group">
+                                <label>ภาษาที่ต้องการอ่าน (OCR Language)</label>
+                                <select id="ocr-lang" class="input-field">
+                                    <option value="tha+eng" selected>🇹🇭+🇬🇧 ภาษาไทย + อังกฤษ (Thai + English)</option>
+                                    <option value="tha">🇹🇭 ภาษาไทยล้วน (Thai Only)</option>
+                                    <option value="eng">🇬🇧 ภาษาอังกฤษล้วน (English Only)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>ช่วงหน้า (กรณีไฟล์ PDF)</label>
+                                <input type="text" id="ocr-pages" class="input-field" value="1-5" placeholder="เช่น 1-3 หรือ all" />
+                            </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-primary btn-lg" id="ocr-start-btn">🔍 เริ่มสแกนดึงข้อความ (Run OCR)</button>
+                        </div>
+
+                        <div id="ocr-progress-box" class="progress-box hidden">
+                            <div class="progress-label" id="ocr-status-text">กำลังเตรียมไฟล์...</div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" id="ocr-progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div id="ocr-result-box" class="ocr-result-box hidden">
+                            <div class="toolbar-row">
+                                <h4>📄 ผลลัพธ์ข้อความที่ดึงได้:</h4>
+                                <div class="btn-group">
+                                    <button class="btn btn-secondary btn-sm" id="ocr-copy-btn">📋 คัดลอกข้อความ</button>
+                                    <button class="btn btn-primary btn-sm" id="ocr-download-txt">💾 ดาวน์โหลด .TXT</button>
+                                </div>
+                            </div>
+                            <textarea id="ocr-output-text" rows="14" class="ocr-textarea"></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 9. SECURITY (PROTECT / UNLOCK) -->
+                <section id="tab-security" class="tool-section">
+                    <div class="section-header">
+                        <h2>🔒 ล็อกรหัสผ่าน & ปลดล็อกรหัสผ่าน PDF</h2>
+                        <p>เข้ารหัสไฟล์ PDF ด้วยมาตรฐาน AES-256 หรือถอดรหัสผ่านออกจากไฟล์ PDF ที่คุณทราบรหัสผ่าน</p>
+                    </div>
+
+                    <div class="control-card no-margin">
+                        <div class="mode-tabs" style="margin-bottom: 1.2rem;">
+                            <label class="radio-card active">
+                                <input type="radio" name="sec-mode" value="protect" checked />
+                                <span>🔐 ตั้งรหัสผ่านล็อกไฟล์ (Protect PDF)</span>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="sec-mode" value="unlock" />
+                                <span>🔓 ปลดล็อกรหัสผ่านถาวร (Unlock PDF)</span>
+                            </label>
+                        </div>
+
+                        <div class="upload-zone" id="sec-dropzone">
+                            <input type="file" id="sec-file" accept=".pdf" hidden />
+                            <div class="upload-prompt">
+                                <div class="upload-icon-circle"><i data-lucide="shield-check"></i></div>
+                                <h3 id="sec-filename">คลิกเลือกไฟล์ PDF</h3>
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-top: 1.2rem;">
+                            <div class="form-group" style="flex:1">
+                                <label id="sec-pw-label">รหัสผ่านสำหรับเปิดไฟล์ (Password)</label>
+                                <input type="password" id="sec-password" class="input-field" placeholder="กรอกรหัสผ่าน..." />
+                            </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-primary btn-lg" id="sec-submit-btn">🔒 ประมวลผลและดาวน์โหลดไฟล์</button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Mobile Bottom Quick Navigation Bar -->
+            <nav class="mobile-bottom-nav mobile-only">
+                <button class="m-nav-item active" data-tab="dashboard">
+                    <i data-lucide="layout-grid"></i>
+                    <span>หน้าหลัก</span>
+                </button>
+                <button class="m-nav-item" data-tab="organize">
+                    <i data-lucide="sliders-horizontal"></i>
+                    <span>จัดหน้า</span>
+                </button>
+                <button class="m-nav-item" data-tab="remove-wm">
+                    <i data-lucide="wand-sparkles"></i>
+                    <span>ลบลายน้ำ</span>
+                </button>
+                <button class="m-nav-item" data-tab="pdf-office">
+                    <i data-lucide="file-spreadsheet"></i>
+                    <span>แปลงไฟล์</span>
+                </button>
+                <button class="m-nav-item" id="mobile-more-btn">
+                    <i data-lucide="menu"></i>
+                    <span>เมนูทั้งหมด</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
